@@ -1,4 +1,4 @@
-# model-dashboard
+# server-management-webui
 
 对前端页面修改并部署：
 
