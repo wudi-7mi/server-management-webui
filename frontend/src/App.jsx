@@ -5,6 +5,7 @@ import GPUUsageView from "./components/GPUUsageView.jsx";
 
 function App() {
   const [activeTab, setActiveTab] = useState("models");
+  console.log("🔥 build test " + Date.now())
 
   const tabs = [
     { id: "models", label: "模型信息", component: <ModelView /> },

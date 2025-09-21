@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Thermometer, Zap, HardDrive, BarChart3, Copy, Check } from "lucide-react";
+import { AlertCircle, Thermometer, Zap, HardDrive, BarChart3, Copy, Check, Eye, X } from "lucide-react";
 
 function GPUUsageView() {
   const [gpus, setGpus] = useState([]);
@@ -9,6 +9,8 @@ function GPUUsageView() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [showProcesses, setShowProcesses] = useState(true);
   const [copiedIndex, setCopiedIndex] = useState(null);
+  const [selectedProcess, setSelectedProcess] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const fetchGPUs = async () => {
     setLoading(true);
@@ -65,6 +67,16 @@ function GPUUsageView() {
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     }
+  };
+
+  const openDetailModal = (process) => {
+    setSelectedProcess(process);
+    setShowDetailModal(true);
+  };
+
+  const closeDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedProcess(null);
   };
 
   const formatBytes = (bytes) => {
@@ -251,17 +263,14 @@ function GPUUsageView() {
                             <th className="w-20 px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                               PID
                             </th>
-                            <th className="w-28 px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                              进程名
-                            </th>
                             <th className="w-24 px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                               用户
                             </th>
                             <th className="w-32 px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                               显存占用
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                              命令行
+                            <th className="w-16 px-4 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                              操作
                             </th>
                           </tr>
                         </thead>
@@ -287,9 +296,6 @@ function GPUUsageView() {
                                   {process.pid}
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-900">
-                                  {process.processName}
-                                </td>
-                                <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-900">
                                   {process.user ? (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                       {process.user}
@@ -303,35 +309,15 @@ function GPUUsageView() {
                                     {process.usedMemoryMB}MB
                                   </span>
                                 </td>
-                                <td className="px-4 py-3 text-sm text-neutral-900">
-                                  <div className="flex items-center gap-1">
-                                    <div className="flex-1 min-w-0 overflow-hidden">
-                                      <div className="truncate text-xs" title={process.commandLine}>
-                                        {process.commandLine ? (
-                                          <span className="text-neutral-600">
-                                            {process.commandLine.length > 40 
-                                              ? `${process.commandLine.substring(0, 40)}...` 
-                                              : process.commandLine}
-                                          </span>
-                                        ) : (
-                                          '-'
-                                        )}
-                                      </div>
-                                    </div>
-                                    {process.commandLine && (
-                                      <button
-                                        onClick={() => copyCommand(process.commandLine, index)}
-                                        className="flex-shrink-0 p-0.5 text-neutral-400 hover:text-neutral-600 transition-colors"
-                                        title="复制完整命令行"
-                                      >
-                                        {copiedIndex === index ? (
-                                          <Check className="w-3 h-3 text-green-600" />
-                                        ) : (
-                                          <Copy className="w-3 h-3" />
-                                        )}
-                                      </button>
-                                    )}
-                                  </div>
+                                <td className="px-4 py-3 text-center">
+                                  <button
+                                    onClick={() => openDetailModal(process)}
+                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-700 bg-neutral-100 rounded hover:bg-neutral-200 transition-colors"
+                                    title="查看详细信息"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    详细
+                                  </button>
                                 </td>
                               </tr>
                             );
@@ -343,6 +329,135 @@ function GPUUsageView() {
                 )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 详细信息模态窗口 */}
+      {showDetailModal && selectedProcess && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            {/* 背景遮罩 */}
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+              onClick={closeDetailModal}
+            ></div>
+            
+            {/* 模态窗口内容 */}
+            <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-xl">
+              {/* 头部 */}
+              <div className="flex items-center justify-between p-6 border-b border-neutral-200">
+                <h3 className="text-lg font-semibold text-neutral-900">
+                  进程详细信息
+                </h3>
+                <button
+                  onClick={closeDetailModal}
+                  className="p-1 text-neutral-400 hover:text-neutral-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* 内容 */}
+              <div className="p-6 space-y-6">
+                {/* 基本信息 */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-neutral-700">进程ID</label>
+                      <p className="mt-1 text-sm text-neutral-900 font-mono">{selectedProcess.pid}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-neutral-700">用户</label>
+                      <p className="mt-1 text-sm text-neutral-900">
+                        {selectedProcess.user ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            {selectedProcess.user}
+                          </span>
+                        ) : (
+                          <span className="text-neutral-500">-</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">进程名</label>
+                    <div className="mt-1 p-3 bg-neutral-50 rounded-lg">
+                      <p className="text-sm text-neutral-900 break-words font-mono">{selectedProcess.processName}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">显存占用</label>
+                    <p className="mt-1 text-sm text-neutral-900">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {selectedProcess.usedMemoryMB}MB
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* GPU设备信息 */}
+                <div>
+                  <label className="text-sm font-medium text-neutral-700">GPU设备</label>
+                  <p className="mt-1 text-sm text-neutral-900">
+                    {(() => {
+                      const gpuDevice = gpus.find(gpu => gpu.index === selectedProcess.gpuIndex);
+                      return gpuDevice ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          GPU {gpuDevice.index}: {gpuDevice.name}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-neutral-500 font-mono">
+                          {selectedProcess.gpuUuid ? `${selectedProcess.gpuUuid.substring(0, 8)}...` : '未知'}
+                        </span>
+                      );
+                    })()}
+                  </p>
+                </div>
+
+                {/* 命令行 */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-neutral-700">命令行</label>
+                    {selectedProcess.commandLine && (
+                      <button
+                        onClick={() => copyCommand(selectedProcess.commandLine, 'modal')}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-700 bg-neutral-100 rounded hover:bg-neutral-200 transition-colors"
+                        title="复制命令行"
+                      >
+                        {copiedIndex === 'modal' ? (
+                          <Check className="w-3 h-3 text-green-600" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                        复制
+                      </button>
+                    )}
+                  </div>
+                  <div className="bg-neutral-50 rounded-lg p-3">
+                    {selectedProcess.commandLine ? (
+                      <pre className="text-xs text-neutral-900 whitespace-pre-wrap break-words font-mono">
+                        {selectedProcess.commandLine}
+                      </pre>
+                    ) : (
+                      <p className="text-sm text-neutral-500">无命令行信息</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* 底部按钮 */}
+              <div className="flex justify-end gap-3 p-6 border-t border-neutral-200">
+                <button
+                  onClick={closeDetailModal}
+                  className="px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+                >
+                  关闭
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

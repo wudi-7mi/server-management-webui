@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build --outDir ./dist && sudo cp -r ./dist/* /var/www/model-dashboard"
+    "build": "rm -rf node_modules/.vite dist && vite build --outDir ./dist && sudo cp -r ./dist/* /var/www/server-management-webui"
   },
   "dependencies": {
     "lucide-react": "^0.544.0",
